@@ -15,10 +15,10 @@ Pod::Spec.new do |s|
     - 零第三方库依赖
   DESC
 
-  s.homepage         = 'https://github.com/your-org/Cardly'
+  s.homepage         = 'https://github.com/OnlyJeremy/Cardly'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'Your Organization' => 'contact@example.com' }
-  s.source           = { :git => 'https://github.com/your-org/Cardly.git', :tag => s.version.to_s }
+  s.source           = { :git => 'https://github.com/OnlyJeremy/Cardly.git', :tag => s.version.to_s }
 
   s.ios.deployment_target = '14.0'
   s.swift_version = '5.0'
