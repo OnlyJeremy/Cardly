@@ -1,0 +1,30 @@
+# Pods
+Pods/
+Podfile.lock
+
+# Xcode
+*.xcworkspace
+xcuserdata/
+build/
+*.xcarchive
+*.swiftpm
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+
+# Swift Package Manager
+.build/
+*.pkg
+
+# Derived data
+DerivedData/
+
+# Ruby
+.ruby-version
+Gemfile.lock
