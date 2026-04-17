@@ -1,13 +1,21 @@
-# Pods
+# CocoaPods
 Pods/
 Podfile.lock
+*.podspec.lock
 
 # Xcode
 *.xcworkspace
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/
 xcuserdata/
+DerivedData/
 build/
 *.xcarchive
 *.swiftpm
+
+# Build
+.build/
+*.pkg
 
 # macOS
 .DS_Store
@@ -19,12 +27,13 @@ build/
 .idea/
 
 # Swift Package Manager
-.build/
-*.pkg
+.spm/
 
-# Derived data
-DerivedData/
-
-# Ruby
+# Misc
+*.swp
+*.swo
+*~
+.env
 .ruby-version
 Gemfile.lock
+
