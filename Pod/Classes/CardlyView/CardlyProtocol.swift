@@ -2,14 +2,14 @@ import UIKit
 
 // MARK: - 滑动方向
 
-enum CardlySwipeDirection {
+public enum CardlySwipeDirection {
     case left   // 左滑（不喜欢）
     case right  // 右滑（喜欢）
 }
 
 // MARK: - 数据源协议
 
-protocol CardlyViewDataSource: AnyObject {
+public protocol CardlyViewDataSource: AnyObject {
     /// 返回卡片总数
     func numberOfCards(in cardlyView: CardlyView) -> Int
     /// 返回指定索引的卡片视图（业务层自定义 UI）
@@ -27,7 +27,7 @@ extension CardlyViewDataSource {
 
 // MARK: - 代理协议
 
-protocol CardlyViewDelegate: AnyObject {
+public protocol CardlyViewDelegate: AnyObject {
     /// 卡片被滑走时触发（手势滑动或代码调用 swipeCurrentCard）
     func cardlyView(_ cardlyView: CardlyView, didSwipeCardAt index: Int, in direction: CardlySwipeDirection)
     /// 新的卡片展示时触发（用于曝光上报）

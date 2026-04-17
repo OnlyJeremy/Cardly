@@ -2,29 +2,29 @@ import UIKit
 
 /// 卡片堆叠容器视图
 /// 单一数据源架构，所有增删改操作通过操作队列串行执行，确保动画期间状态安全
-final class CardlyView: UIView {
+public final class CardlyView: UIView {
 
     // MARK: - 公开属性
 
     /// 数据源
-    weak var dataSource: CardlyViewDataSource?
+    public weak var dataSource: CardlyViewDataSource?
     /// 代理
-    weak var delegate: CardlyViewDelegate?
+    public weak var delegate: CardlyViewDelegate?
 
     /// 动画引擎（可配置动画参数）
-    let animator = CardlyAnimator()
+    public let animator = CardlyAnimator()
 
     /// 同时可见的卡片数量，默认 2
-    var visibleCardCount: Int = 2
+    public var visibleCardCount: Int = 2
 
     /// 剩余多少张时触发预加载回调，默认 5
-    var prefetchThreshold: Int = 5
+    public var prefetchThreshold: Int = 5
 
     /// 是否允许手势拖拽滑动，设为 false 时只能通过代码触发滑动
-    var isSwipeEnabled: Bool = true
+    public var isSwipeEnabled: Bool = true
 
     /// 当前展示的卡片在数据源中的索引
-    private(set) var currentCardIndex: Int = 0
+    public private(set) var currentCardIndex: Int = 0
 
     // MARK: - 私有属性
 
@@ -75,7 +75,7 @@ final class CardlyView: UIView {
     /// 刷新数据，保持当前位置（类似 UITableView.reloadData）
     /// 适用场景：插入特殊卡、定位刷新、数据变化后刷新
     /// 安全保证：无论内部是否有动画或队列操作，都会立即清理干净后重建
-    func reloadData() {
+    public func reloadData() {
         // 代际递增 — 让所有进行中的动画 completion 失效
         reloadGeneration += 1
         // 清除操作队列中排队等待的操作
@@ -103,7 +103,7 @@ final class CardlyView: UIView {
     /// 重置到第一张并重新加载所有数据
     /// 适用场景：首次加载、切换账号、全量重置
     /// 安全保证：无论内部是否有动画或队列操作，都会立即清理干净后重建
-    func reloadDataAndResetIndex() {
+    public func reloadDataAndResetIndex() {
         // 代际递增 — 让所有进行中的动画 completion 失效
         reloadGeneration += 1
         operationQueue.clear()
@@ -122,7 +122,7 @@ final class CardlyView: UIView {
 
     /// 代码触发滑动（非手势），带飞出动画
     /// 适用场景：点击 LIKE/NOPE 按钮
-    func swipeCurrentCard(direction: CardlySwipeDirection) {
+    public func swipeCurrentCard(direction: CardlySwipeDirection) {
         enqueueOperation { [weak self] in
             self?.performSwipe(direction: direction)
         }
@@ -130,7 +130,7 @@ final class CardlyView: UIView {
 
     /// 移除当前卡片（缩小淡出动画，不走滑动飞出）
     /// 适用场景：Super Hi、屏蔽用户
-    func removeCurrentCard() {
+    public func removeCurrentCard() {
         enqueueOperation { [weak self] in
             self?.performRemoveCurrentCard()
         }
@@ -138,7 +138,7 @@ final class CardlyView: UIView {
 
     /// 移除指定索引的卡片
     /// 适用场景：通话建立后删除已匹配用户的卡片
-    func removeCard(at index: Int) {
+    public func removeCard(at index: Int) {
         enqueueOperation { [weak self] in
             self?.performRemoveCard(at: index)
         }
@@ -146,7 +146,7 @@ final class CardlyView: UIView {
 
     /// 按条件批量移除卡片
     /// 适用场景：通话列表变化后批量删除已匹配用户的卡片
-    func removeCards(where predicate: @escaping (Int) -> Bool) {
+    public func removeCards(where predicate: @escaping (Int) -> Bool) {
         enqueueOperation { [weak self] in
             self?.performRemoveCards(where: predicate)
         }
@@ -154,7 +154,7 @@ final class CardlyView: UIView {
 
     /// 在指定索引处插入一张卡片（数据源需先插入数据）
     /// 适用场景：插入特殊卡（完善资料卡、广告卡）
-    func insertCard(at index: Int) {
+    public func insertCard(at index: Int) {
         enqueueOperation { [weak self] in
             self?.performInsertCard(at: index)
         }
@@ -162,7 +162,7 @@ final class CardlyView: UIView {
 
     /// 刷新指定索引的卡片内容（不重建，原地替换视图）
     /// 适用场景：用户上传新头像后更新卡片显示
-    func reloadCard(at index: Int) {
+    public func reloadCard(at index: Int) {
         let visibleIndex = index - currentCardIndex
         guard visibleIndex >= 0, visibleIndex < cardViews.count else { return }
         guard let newView = dataSource?.cardlyView(self, viewForCardAt: index) else { return }
@@ -187,7 +187,7 @@ final class CardlyView: UIView {
 
     /// 业务层追加新卡片后调用，更新内部计数并补充可见卡片
     /// 适用场景：预加载请求返回新数据后调用
-    func appendCards(count: Int) {
+    public func appendCards(count: Int) {
         totalCards += count
         hasPendingPrefetch = false
         // 补充可见区域的卡片
@@ -543,7 +543,7 @@ final class CardlyView: UIView {
     }
 
     /// bounds 变化时更新卡片尺寸
-    override func layoutSubviews() {
+    override public func layoutSubviews() {
         super.layoutSubviews()
         for (i, card) in cardViews.enumerated() {
             if card.transform == .identity || i > 0 {
