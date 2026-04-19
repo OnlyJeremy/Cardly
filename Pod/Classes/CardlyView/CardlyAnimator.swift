@@ -31,7 +31,7 @@ public final class CardlyAnimator {
     // MARK: - 动画状态
 
     /// 是否正在执行动画，用于防止动画期间响应手势
-    private(set) var isAnimating = false
+    public private(set) var isAnimating = false
 
     // MARK: - 拖拽变换
 

@@ -28,6 +28,8 @@ extension CardlyViewDataSource {
 // MARK: - 代理协议
 
 public protocol CardlyViewDelegate: AnyObject {
+    /// 滑动前拦截（手势滑动或代码调用 swipeCurrentCard）
+    func cardlyView(_ cardlyView: CardlyView, shouldSwipeCardAt index: Int, in direction: CardlySwipeDirection) -> Bool
     /// 卡片被滑走时触发（手势滑动或代码调用 swipeCurrentCard）
     func cardlyView(_ cardlyView: CardlyView, didSwipeCardAt index: Int, in direction: CardlySwipeDirection)
     /// 新的卡片展示时触发（用于曝光上报）
@@ -49,9 +51,10 @@ public protocol CardlyViewDelegate: AnyObject {
 // MARK: - 代理默认实现（可选方法）
 
 extension CardlyViewDelegate {
-    func cardlyView(_ cardlyView: CardlyView, didRemoveCardAt index: Int) {}
-    func cardlyView(_ cardlyView: CardlyView, draggingCardAt index: Int, progress: CGFloat, direction: CardlySwipeDirection) {}
-    func cardlyView(_ cardlyView: CardlyView, didCancelSwipeAt index: Int) {}
-    func cardlyView(_ cardlyView: CardlyView, didTapCardAt index: Int) {}
-    func cardlyView(_ cardlyView: CardlyView, needsPrefetchWithRemainingCount remaining: Int) {}
+    public func cardlyView(_ cardlyView: CardlyView, shouldSwipeCardAt index: Int, in direction: CardlySwipeDirection) -> Bool { true }
+    public func cardlyView(_ cardlyView: CardlyView, didRemoveCardAt index: Int) {}
+    public func cardlyView(_ cardlyView: CardlyView, draggingCardAt index: Int, progress: CGFloat, direction: CardlySwipeDirection) {}
+    public func cardlyView(_ cardlyView: CardlyView, didCancelSwipeAt index: Int) {}
+    public func cardlyView(_ cardlyView: CardlyView, didTapCardAt index: Int) {}
+    public func cardlyView(_ cardlyView: CardlyView, needsPrefetchWithRemainingCount remaining: Int) {}
 }

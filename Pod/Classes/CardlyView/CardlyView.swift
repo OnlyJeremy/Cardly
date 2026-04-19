@@ -2,7 +2,7 @@ import UIKit
 
 /// 卡片堆叠容器视图
 /// 单一数据源架构，所有增删改操作通过操作队列串行执行，确保动画期间状态安全
-public final class CardlyView: UIView {
+open class CardlyView: UIView {
 
     // MARK: - 公开属性
 
@@ -47,12 +47,12 @@ public final class CardlyView: UIView {
 
     // MARK: - 初始化
 
-    override init(frame: CGRect) {
+    public override init(frame: CGRect) {
         super.init(frame: frame)
         setupGesture()
     }
 
-    required init?(coder: NSCoder) {
+    public required init?(coder: NSCoder) {
         super.init(coder: coder)
         setupGesture()
     }
@@ -122,41 +122,48 @@ public final class CardlyView: UIView {
 
     /// 代码触发滑动（非手势），带飞出动画
     /// 适用场景：点击 LIKE/NOPE 按钮
-    public func swipeCurrentCard(direction: CardlySwipeDirection) {
+    public func swipeCurrentCard(direction: CardlySwipeDirection, completion: (() -> Void)? = nil) {
         enqueueOperation { [weak self] in
-            self?.performSwipe(direction: direction)
+            self?.performSwipe(direction: direction, completion: completion)
         }
+    }
+
+    /// 返回指定数据索引对应的当前可见卡片视图
+    public func viewForCard(at index: Int) -> UIView? {
+        let visibleIndex = index - currentCardIndex
+        guard visibleIndex >= 0, visibleIndex < cardViews.count else { return nil }
+        return cardViews[visibleIndex]
     }
 
     /// 移除当前卡片（缩小淡出动画，不走滑动飞出）
     /// 适用场景：Super Hi、屏蔽用户
-    public func removeCurrentCard() {
+    public func removeCurrentCard(completion: (() -> Void)? = nil) {
         enqueueOperation { [weak self] in
-            self?.performRemoveCurrentCard()
+            self?.performRemoveCurrentCard(completion: completion)
         }
     }
 
     /// 移除指定索引的卡片
     /// 适用场景：通话建立后删除已匹配用户的卡片
-    public func removeCard(at index: Int) {
+    public func removeCard(at index: Int, completion: (() -> Void)? = nil) {
         enqueueOperation { [weak self] in
-            self?.performRemoveCard(at: index)
+            self?.performRemoveCard(at: index, completion: completion)
         }
     }
 
     /// 按条件批量移除卡片
     /// 适用场景：通话列表变化后批量删除已匹配用户的卡片
-    public func removeCards(where predicate: @escaping (Int) -> Bool) {
+    public func removeCards(where predicate: @escaping (Int) -> Bool, completion: (() -> Void)? = nil) {
         enqueueOperation { [weak self] in
-            self?.performRemoveCards(where: predicate)
+            self?.performRemoveCards(where: predicate, completion: completion)
         }
     }
 
     /// 在指定索引处插入一张卡片（数据源需先插入数据）
     /// 适用场景：插入特殊卡（完善资料卡、广告卡）
-    public func insertCard(at index: Int) {
+    public func insertCard(at index: Int, completion: (() -> Void)? = nil) {
         enqueueOperation { [weak self] in
-            self?.performInsertCard(at: index)
+            self?.performInsertCard(at: index, completion: completion)
         }
     }
 
@@ -187,12 +194,9 @@ public final class CardlyView: UIView {
 
     /// 业务层追加新卡片后调用，更新内部计数并补充可见卡片
     /// 适用场景：预加载请求返回新数据后调用
-    public func appendCards(count: Int) {
-        totalCards += count
-        hasPendingPrefetch = false
-        // 补充可见区域的卡片
-        while cardViews.count < visibleCardCount, currentCardIndex + cardViews.count < totalCards {
-            loadNextCardAtEnd()
+    public func appendCards(count: Int, completion: (() -> Void)? = nil) {
+        enqueueOperation { [weak self] in
+            self?.performAppendCards(count: count, completion: completion)
         }
     }
 
@@ -236,6 +240,15 @@ public final class CardlyView: UIView {
             if shouldSwipe {
                 // 根据拖拽方向+速度方向确定最终滑动方向
                 let swipeDirection: CardlySwipeDirection = (translation.x + velocity.x * 0.1) > 0 ? .right : .left
+                guard delegate?.cardlyView(self, shouldSwipeCardAt: currentCardIndex, in: swipeDirection) ?? true else {
+                    let gen = reloadGeneration
+                    overlayViews.first??.reset()
+                    animator.animateSnapBack(card: topCard, backgroundCard: cardViews.count > 1 ? cardViews[1] : nil) { [weak self] in
+                        guard let self, gen == self.reloadGeneration else { return }
+                        self.delegate?.cardlyView(self, didCancelSwipeAt: self.currentCardIndex)
+                    }
+                    return
+                }
                 completeSwipe(direction: swipeDirection)
             } else {
                 // 未达阈值，回弹到原位
@@ -282,9 +295,15 @@ public final class CardlyView: UIView {
     // MARK: - 操作队列具体实现
 
     /// 代码触发滑动的具体实现
-    private func performSwipe(direction: CardlySwipeDirection) {
+    private func performSwipe(direction: CardlySwipeDirection, completion: (() -> Void)? = nil) {
         guard !cardViews.isEmpty else {
             operationQueue.markCompleted()
+            completion?()
+            return
+        }
+        guard delegate?.cardlyView(self, shouldSwipeCardAt: currentCardIndex, in: direction) ?? true else {
+            operationQueue.markCompleted()
+            completion?()
             return
         }
         let topCard = cardViews[0]
@@ -301,6 +320,7 @@ public final class CardlyView: UIView {
             self.delegate?.cardlyView(self, didSwipeCardAt: swipedIndex, in: direction)
             self.afterCardRemoved()
             self.operationQueue.markCompleted()
+            completion?()
         }
 
         if cardViews.count > 1 {
@@ -309,9 +329,10 @@ public final class CardlyView: UIView {
     }
 
     /// 移除当前卡片的具体实现（缩小+淡出动画）
-    private func performRemoveCurrentCard() {
+    private func performRemoveCurrentCard(completion: (() -> Void)? = nil) {
         guard !cardViews.isEmpty else {
             operationQueue.markCompleted()
+            completion?()
             return
         }
         let topCard = cardViews[0]
@@ -331,6 +352,7 @@ public final class CardlyView: UIView {
             self.delegate?.cardlyView(self, didRemoveCardAt: removedIndex)
             self.afterCardRemoved()
             self.operationQueue.markCompleted()
+            completion?()
         }
 
         if cardViews.count > 1 {
@@ -339,12 +361,12 @@ public final class CardlyView: UIView {
     }
 
     /// 移除指定索引卡片的具体实现
-    private func performRemoveCard(at index: Int) {
+    private func performRemoveCard(at index: Int, completion: (() -> Void)? = nil) {
         let visibleIndex = index - currentCardIndex
 
         if visibleIndex == 0 {
             // 移除的是当前卡片，走当前卡片移除逻辑
-            performRemoveCurrentCard()
+            performRemoveCurrentCard(completion: completion)
             return
         }
 
@@ -363,10 +385,11 @@ public final class CardlyView: UIView {
         // 尝试在可见区域末尾补充新卡片
         loadNextCardAtEnd()
         operationQueue.markCompleted()
+        completion?()
     }
 
     /// 按条件批量移除卡片的具体实现
-    private func performRemoveCards(where predicate: (Int) -> Bool) {
+    private func performRemoveCards(where predicate: (Int) -> Bool, completion: (() -> Void)? = nil) {
         // 收集所有需要移除的索引
         var indicesToRemove: [Int] = []
         for i in currentCardIndex..<totalCards {
@@ -377,6 +400,7 @@ public final class CardlyView: UIView {
 
         guard !indicesToRemove.isEmpty else {
             operationQueue.markCompleted()
+            completion?()
             return
         }
 
@@ -417,10 +441,11 @@ public final class CardlyView: UIView {
             delegate?.cardlyView(self, didRemoveCardAt: idx)
         }
         operationQueue.markCompleted()
+        completion?()
     }
 
     /// 插入卡片的具体实现
-    private func performInsertCard(at index: Int) {
+    private func performInsertCard(at index: Int, completion: (() -> Void)? = nil) {
         totalCards += 1
 
         let visibleIndex = index - currentCardIndex
@@ -429,6 +454,18 @@ public final class CardlyView: UIView {
             rebuildVisibleCards()
         }
         operationQueue.markCompleted()
+        completion?()
+    }
+
+    /// 追加卡片的具体实现
+    private func performAppendCards(count: Int, completion: (() -> Void)? = nil) {
+        totalCards += count
+        hasPendingPrefetch = false
+        while cardViews.count < visibleCardCount, currentCardIndex + cardViews.count < totalCards {
+            loadNextCardAtEnd()
+        }
+        operationQueue.markCompleted()
+        completion?()
     }
 
     // MARK: - 卡片布局
