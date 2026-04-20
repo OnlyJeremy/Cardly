@@ -184,6 +184,7 @@ open class CardlyView: UIView {
         if let overlay = overlay {
             overlay.frame = newView.bounds
             overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            overlay.alpha = 0
             newView.addSubview(overlay)
         }
         overlayViews[visibleIndex] = overlay
@@ -221,6 +222,8 @@ open class CardlyView: UIView {
 
         switch gesture.state {
         case .changed:
+            // 显示 overlay
+            overlayViews.first??.alpha = 1
             // 实时更新当前卡片的拖拽变换
             animator.applyDragTransform(to: topCard, translation: translation, containerWidth: bounds.width)
             // 实时更新背景卡片的缩放
@@ -245,6 +248,7 @@ open class CardlyView: UIView {
                     overlayViews.first??.reset()
                     animator.animateSnapBack(card: topCard, backgroundCard: cardViews.count > 1 ? cardViews[1] : nil) { [weak self] in
                         guard let self, gen == self.reloadGeneration else { return }
+                        self.overlayViews.first??.alpha = 0
                         self.delegate?.cardlyView(self, didCancelSwipeAt: self.currentCardIndex)
                     }
                     return
@@ -256,6 +260,7 @@ open class CardlyView: UIView {
                 overlayViews.first??.reset()
                 animator.animateSnapBack(card: topCard, backgroundCard: cardViews.count > 1 ? cardViews[1] : nil) { [weak self] in
                     guard let self, gen == self.reloadGeneration else { return }
+                    self.overlayViews.first??.alpha = 0
                     self.delegate?.cardlyView(self, didCancelSwipeAt: self.currentCardIndex)
                 }
             }
@@ -481,11 +486,9 @@ open class CardlyView: UIView {
         }
     }
 
-    /// 配置单张卡片的 frame、圆角、层级、变换，并叠加 overlay
+    /// 配置单张卡片的 frame、层级、变换，并叠加 overlay
     private func configureCard(_ card: UIView, at visibleIndex: Int, dataIndex: Int) {
         card.frame = bounds
-        card.layer.cornerRadius = 16
-        card.clipsToBounds = true
         insertSubview(card, at: max(0, subviews.count - visibleIndex))
 
         if visibleIndex == 0 {
@@ -503,6 +506,7 @@ open class CardlyView: UIView {
         if let overlay = overlay {
             overlay.frame = card.bounds
             overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            overlay.alpha = 0
             card.addSubview(overlay)
         }
         overlayViews.append(overlay)
