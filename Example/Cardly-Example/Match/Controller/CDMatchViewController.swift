@@ -235,11 +235,15 @@ final class CDMatchViewController: UIViewController {
     // MARK: - 操作按钮事件
 
     @objc private func likeTapped() {
-        deckView.swipeCurrentCard(direction: .right)
+        deckView.swipeCurrentCard(direction: .right) {
+            print("[划卡][喜欢] 滑动动画完成")
+        }
     }
 
     @objc private func nopeTapped() {
-        deckView.swipeCurrentCard(direction: .left)
+        deckView.swipeCurrentCard(direction: .left) {
+            print("[划卡][不喜欢] 滑动动画完成")
+        }
     }
 
     @objc private func superHiTapped() {
@@ -253,7 +257,9 @@ final class CDMatchViewController: UIViewController {
         guard idx < cards.count else { return }
         let card = cards[idx]
         print("[划卡][Super Hi] 超级喜欢 → \(card.nickname) (userID=\(card.userID))")
-        deckView.removeCurrentCard()
+        deckView.removeCurrentCard {
+            print("[划卡][Super Hi] 卡片已移除")
+        }
     }
 
     // MARK: - 调试：删匹配卡（模拟通话建立后删除）
@@ -270,7 +276,9 @@ final class CDMatchViewController: UIViewController {
         print("[划卡][删匹配卡] 删除已匹配用户: \(targetCard.nickname) (userID=\(targetCard.userID), 索引=\(targetIdx))")
 
         cards.remove(at: targetIdx)
-        deckView.removeCard(at: targetIdx)
+        deckView.removeCard(at: targetIdx) {
+            print("[划卡][删匹配卡] 卡片已移除")
+        }
     }
 
     // MARK: - 调试：批量删除（模拟多个用户建立通话）
@@ -301,7 +309,9 @@ final class CDMatchViewController: UIViewController {
 
         // 通知组件移除
         let removeSet = Set(indicesToRemove)
-        deckView.removeCards { removeSet.contains($0) }
+        deckView.removeCards({ removeSet.contains($0) }) {
+            print("[划卡][批量删除] 卡片已全部移除")
+        }
     }
 
     // MARK: - 调试：插入特殊卡（在当前卡后第 6 位插入完善资料卡）
@@ -318,7 +328,9 @@ final class CDMatchViewController: UIViewController {
         )
         print("[划卡][插入特殊卡] 在索引 \(insertIdx) 处插入完善资料卡")
         cards.insert(specialCard, at: insertIdx)
-        deckView.insertCard(at: insertIdx)
+        deckView.insertCard(at: insertIdx) {
+            print("[划卡][插入特殊卡] 卡片已插入")
+        }
     }
 
     // MARK: - 调试：更新头像（模拟头像更换后保留当前+3张，请求新数据追加）
@@ -343,9 +355,10 @@ final class CDMatchViewController: UIViewController {
                 return
             }
             self.cards.append(contentsOf: page)
-            self.deckView.reloadData()
-            self.updateStatus()
-            print("[划卡][更新头像] 完成，追加 \(page.count) 张新卡片，服务端剩余 \(self.server.remainingCount) 张")
+            self.deckView.appendCards(count: page.count) {
+                self.updateStatus()
+                print("[划卡][更新头像] 完成，追加 \(page.count) 张新卡片，服务端剩余 \(self.server.remainingCount) 张")
+            }
         }
     }
 
@@ -433,6 +446,19 @@ extension CDMatchViewController: CardlyViewDataSource {
 // MARK: - CardlyViewDelegate 代理
 
 extension CDMatchViewController: CardlyViewDelegate {
+
+    // 滑动前拦截 — 可用于业务规则检查（如特殊卡片不允许滑动）
+    func cardlyView(_ cardlyView: CardlyView, shouldSwipeCardAt index: Int, in direction: CardlySwipeDirection) -> Bool {
+        guard index < cards.count else { return true }
+        let card = cards[index]
+        // 特殊卡片（非用户卡片）不允许滑动
+        let canSwipe = card.cardType == .user
+        if !canSwipe {
+            let directionText = direction == .right ? "喜欢" : "不喜欢"
+            print("[划卡][守卫] 特殊卡片不允许\(directionText)滑动")
+        }
+        return canSwipe
+    }
 
     func cardlyView(_ cardlyView: CardlyView, didSwipeCardAt index: Int, in direction: CardlySwipeDirection) {
         let card = cards[index]
