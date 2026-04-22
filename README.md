@@ -154,37 +154,46 @@ let index = cardlyView.currentCardIndex
 ### 卡片操作方法
 
 ```swift
-// 代码触发滑动（带动画）
-cardlyView.swipeCurrentCard(direction: .right) {
-    print("滑动动画完成")
+// 代码触发滑动 — completion 可选，不需要时可省略
+cardlyView.swipeCurrentCard(direction: .right)           // 基础用法
+cardlyView.swipeCurrentCard(direction: .right) {         // 需要回调时
+    print("滑动动画完成，可继续后续操作")
 }
-cardlyView.swipeCurrentCard(direction: .left)
 
-// 移除当前卡片（缩小淡出动画）
+// 移除当前卡片（缩小淡出动画） — completion 可选
+cardlyView.removeCurrentCard()
 cardlyView.removeCurrentCard {
-    print("移除动画完成")
+    print("卡片已移除")
 }
 
-// 移除指定索引的卡片
+// 移除指定索引的卡片 — completion 可选
+cardlyView.removeCard(at: 3)
 cardlyView.removeCard(at: 3) {
     print("卡片已移除")
 }
 
-// 按条件批量移除卡片
+// 按条件批量移除卡片 — completion 可选
+cardlyView.removeCards { index in
+    return index > 10
+}
 cardlyView.removeCards({ index in
     return index > 10
 }) {
     print("批量移除完成")
 }
 
-// 在指定位置插入卡片（数据源需先更新）
+// 在指定位置插入卡片 — completion 可选（数据源需先更新）
 cards.insert(newCard, at: 2)
+cardlyView.insertCard(at: 2)
+// 或带回调
 cardlyView.insertCard(at: 2) {
     print("卡片已插入")
 }
 
-// 追加新卡片（数据源先增加数据）
+// 追加新卡片 — completion 可选（数据源先增加数据）
 cards.append(contentsOf: newCards)
+cardlyView.appendCards(count: newCards.count)
+// 或带回调（推荐用于预加载场景）
 cardlyView.appendCards(count: newCards.count) {
     print("新卡片已加载完成")
 }
@@ -198,12 +207,6 @@ cardlyView.reloadData()
 
 // 重新加载所有卡片，重置到第一张
 cardlyView.reloadDataAndResetIndex()
-
-// 追加新卡片（数据源先增加数据）
-cards.append(contentsOf: newCards)
-cardlyView.appendCards(count: newCards.count) {
-    print("追加卡片完成")
-}
 
 // 获取指定数据索引对应的当前可见卡片视图
 if let cardView = cardlyView.viewForCard(at: currentIndex) {
