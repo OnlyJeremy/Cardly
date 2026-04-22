@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'Cardly'
-  s.version          = '1.0.0'
+  s.version          = '1.1.0'
   s.summary          = '高性能卡片堆叠容器 UI 组件'
 
   s.description      = <<-DESC

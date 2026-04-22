@@ -25,7 +25,7 @@
 ### CocoaPods
 
 ```ruby
-pod 'Cardly', '~> 1.0'
+pod 'Cardly', '~> 1.1'
 ```
 
 ## 快速开始
@@ -87,10 +87,20 @@ extension ViewController: CardlyViewDataSource {
 ```swift
 extension ViewController: CardlyViewDelegate {
     
+    // 滑动前拦截 — 返回 false 可阻止本次滑动
+    func cardlyView(_ cardlyView: CardlyView, shouldSwipeCardAt index: Int, in direction: CardlySwipeDirection) -> Bool {
+        // 例：用户有欠费，禁止滑动
+        if userHasDebt {
+            return false
+        }
+        return true
+    }
+    
     // 卡片被滑走时调用
     func cardlyView(_ cardlyView: CardlyView, didSwipeCardAt index: Int, in direction: CardlySwipeDirection) {
         let action = direction == .left ? "NOPE" : "LIKE"
         print("用户\(action)了卡片 \(index)")
+    }
     }
     
     // 新卡片展示时调用
@@ -145,26 +155,39 @@ let index = cardlyView.currentCardIndex
 
 ```swift
 // 代码触发滑动（带动画）
-cardlyView.swipeCurrentCard(direction: .right)  // 右滑（喜欢）
-cardlyView.swipeCurrentCard(direction: .left)   // 左滑（不喜欢）
+cardlyView.swipeCurrentCard(direction: .right) {
+    print("滑动动画完成")
+}
+cardlyView.swipeCurrentCard(direction: .left)
 
 // 移除当前卡片（缩小淡出动画）
-cardlyView.removeCurrentCard()
+cardlyView.removeCurrentCard {
+    print("移除动画完成")
+}
 
 // 移除指定索引的卡片
-cardlyView.removeCard(at: 3)
+cardlyView.removeCard(at: 3) {
+    print("卡片已移除")
+}
 
 // 按条件批量移除卡片
-cardlyView.removeCards { index in
-    return index > 10  // 移除索引 > 10 的卡片
+cardlyView.removeCards({ index in
+    return index > 10
+}) {
+    print("批量移除完成")
 }
 
 // 在指定位置插入卡片（数据源需先更新）
 cards.insert(newCard, at: 2)
-cardlyView.insertCard(at: 2)
+cardlyView.insertCard(at: 2) {
+    print("卡片已插入")
+}
 
-// 刷新指定卡片内容（用户修改后）
-cardlyView.reloadCard(at: 2)
+// 追加新卡片（数据源先增加数据）
+cards.append(contentsOf: newCards)
+cardlyView.appendCards(count: newCards.count) {
+    print("新卡片已加载完成")
+}
 ```
 
 ### 数据管理方法
@@ -178,7 +201,14 @@ cardlyView.reloadDataAndResetIndex()
 
 // 追加新卡片（数据源先增加数据）
 cards.append(contentsOf: newCards)
-cardlyView.appendCards(count: newCards.count)
+cardlyView.appendCards(count: newCards.count) {
+    print("追加卡片完成")
+}
+
+// 获取指定数据索引对应的当前可见卡片视图
+if let cardView = cardlyView.viewForCard(at: currentIndex) {
+    print("获取卡片视图成功")
+}
 ```
 
 ### 动画配置
@@ -336,7 +366,39 @@ extension MatchViewController: CardlyViewDelegate {
 }
 ```
 
+## 升级指南（v1.1.0）
+
+### 新增功能
+
+- ✨ **shouldSwipeCardAt** delegate — 在滑动前拦截决策，适用于业务规则检查
+- ✨ **completion 回调** — 所有操作方法（swipe、remove、insert、append）现支持异步完成回调
+- ✨ **viewForCard(at:)** — 获取指定数据索引的可见卡片视图
+- ✨ **isAnimating** 状态 — 公开动画执行状态，用于操作守卫
+
+### 重要变更
+
+**⚠️ 移除了硬编码圆角样式**
+
+v1.0 中 CardlyView 自动为卡片设置圆角（cornerRadius=16）。v1.1 移除此样式，改由业务层在 DataSource 中设置。
+
+**迁移方式：**
+
+```swift
+extension ViewController: CardlyViewDataSource {
+    func cardlyView(_ cardlyView: CardlyView, viewForCardAt index: Int) -> UIView {
+        let cardView = CardView()
+        cardView.layer.cornerRadius = 16      // 现在由业务层设置
+        cardView.clipsToBounds = true
+        cardView.configure(with: cards[index])
+        return cardView
+    }
+}
+```
+
+**为什么做这个变更？** CardlyView 是容器 + 交互引擎，不应该强制���加 UI 样式。样式应由业务层灵活控制。
+
 ## 许可证
 
 Cardly 采用 MIT 许可证。详见 [LICENSE](LICENSE) 文件。
+
 
